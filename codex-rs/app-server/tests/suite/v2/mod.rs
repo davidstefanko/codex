@@ -118,6 +118,7 @@ mod thread_loaded_list;
 mod thread_memory_mode_set;
 mod thread_metadata_update;
 mod thread_name_websocket;
+mod thread_processes;
 mod thread_queue;
 mod thread_read;
 mod thread_resume;

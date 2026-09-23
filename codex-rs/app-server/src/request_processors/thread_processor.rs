@@ -1,3 +1,6 @@
+#[path = "thread_processes.rs"]
+mod thread_processes;
+
 #[path = "daemon_snapshot.rs"]
 mod daemon_snapshot;
 

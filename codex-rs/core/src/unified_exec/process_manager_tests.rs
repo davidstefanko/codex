@@ -643,3 +643,59 @@ async fn pruning_does_not_evict_live_process_while_exited_process_is_finalizing(
         (None, MAX_UNIFIED_EXEC_PROCESSES)
     );
 }
+
+#[tokio::test]
+async fn task_process_inventory_filters_exited_entries_without_reaping_other_threads() {
+    let (_, turn) = crate::session::tests::make_session_and_context().await;
+    let manager = UnifiedExecProcessManager::default();
+    let other_manager = UnifiedExecProcessManager::default();
+    let process = Arc::new(
+        crate::unified_exec::process_tests::remote_process(
+            codex_exec_server::WriteStatus::Accepted,
+            /*terminate_error*/ None,
+            codex_sandboxing::SandboxType::None,
+        )
+        .await,
+    );
+    let process_id = manager.allocate_process_id().await;
+    manager.process_store.lock().await.processes.insert(
+        process_id,
+        ProcessEntry {
+            process: Arc::clone(&process),
+            plugin_metrics_sidecar: None,
+            call_id: "item-1".to_string(),
+            process_id,
+            cwd: PathUri::parse("file:///synthetic-private-directory").expect("fixture URI"),
+            initial_exec_command_active: Arc::new(AtomicBool::new(/*v*/ false)),
+            hook_command: "command synthetic-secret-argument".to_string(),
+            tty: false,
+            environment_id: codex_exec_server::LOCAL_ENVIRONMENT_ID.to_string(),
+            permissions: super::super::TerminalPermissions::for_launch(
+                turn.environments.primary().expect("turn environment"),
+                &turn,
+                super::super::TerminalSandboxSource::Native,
+                crate::sandboxing::SandboxPermissions::UseDefault,
+                /*additional_permissions*/ None,
+                /*internal_permissions*/ None,
+            ),
+            network_approval: None,
+            session: std::sync::Weak::new(),
+            last_used: Instant::now(),
+        },
+    );
+    assert_eq!(
+        manager.list_task_processes().await,
+        vec![TaskProcessInfo {
+            item_id: "item-1".to_string(),
+            process_id,
+        }]
+    );
+    assert_eq!(other_manager.list_task_processes().await, Vec::new());
+    process
+        .terminate_confirmed()
+        .await
+        .expect("fixture termination");
+    assert_eq!(manager.list_task_processes().await, Vec::new());
+    // Exit filtering must work while a terminated entry still awaits ordinary cleanup.
+    assert_eq!(manager.process_store.lock().await.processes.len(), 1);
+}

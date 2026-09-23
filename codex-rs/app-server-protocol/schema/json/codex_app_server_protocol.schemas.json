@@ -24225,6 +24225,42 @@
         "title": "ThreadStatusChangedNotification",
         "type": "object"
       },
+      "ThreadTaskProcess": {
+        "properties": {
+          "executable": {
+            "description": "Fixed runtime classification `unified-exec`, never a command-derived name.",
+            "type": "string"
+          },
+          "itemId": {
+            "type": "string"
+          },
+          "processId": {
+            "description": "Stable identifier assigned by the runtime, not an operating-system PID.",
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/definitions/v2/ThreadTaskProcessStatus"
+              }
+            ],
+            "description": "Live when sampled; the process may exit before the response arrives."
+          }
+        },
+        "required": [
+          "executable",
+          "itemId",
+          "processId",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ThreadTaskProcessStatus": {
+        "enum": [
+          "running"
+        ],
+        "type": "string"
+      },
       "ThreadTimelineEntry": {
         "description": "EXPERIMENTAL - one item or turn boundary in canonical rollout order.",
         "oneOf": [

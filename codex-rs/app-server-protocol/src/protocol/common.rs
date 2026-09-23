@@ -747,6 +747,12 @@ client_request_definitions! {
         serialization: thread_id(params.thread_id),
         response: v2::ThreadBackgroundTerminalsListResponse,
     },
+    #[experimental("thread/processes/list")]
+    ThreadProcessesList => "thread/processes/list" {
+        params: v2::ThreadProcessesListParams,
+        serialization: thread_id(params.thread_id),
+        response: v2::ThreadProcessesListResponse,
+    },
     #[experimental("thread/backgroundTerminals/terminate")]
     ThreadBackgroundTerminalsTerminate => "thread/backgroundTerminals/terminate" {
         params: v2::ThreadBackgroundTerminalsTerminateParams,
@@ -3947,6 +3953,31 @@ mod tests {
         assert_eq!(
             json!({
                 "method": "thread/backgroundTerminals/list",
+                "id": 8,
+                "params": {
+                    "threadId": "thr_123",
+                    "cursor": null,
+                    "limit": null
+                }
+            }),
+            serde_json::to_value(&request)?,
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn serialize_thread_processes_list() -> Result<()> {
+        let request = ClientRequest::ThreadProcessesList {
+            request_id: RequestId::Integer(8),
+            params: v2::ThreadProcessesListParams {
+                thread_id: "thr_123".to_string(),
+                cursor: None,
+                limit: None,
+            },
+        };
+        assert_eq!(
+            json!({
+                "method": "thread/processes/list",
                 "id": 8,
                 "params": {
                     "threadId": "thr_123",

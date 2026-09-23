@@ -6076,6 +6076,13 @@ class ThreadStatusChangedNotification(BaseModel):
     thread_id: Annotated[str, Field(alias="threadId")]
 
 
+class ThreadTaskProcessStatus(RootModel[Literal["running"]]):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    root: Literal["running"]
+
+
 class TurnStartedThreadTimelineEntry(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
@@ -9928,6 +9935,30 @@ class ThreadStartParams(BaseModel):
             description="Optional client-supplied analytics source classification for this thread.",
         ),
     ] = None
+
+
+class ThreadTaskProcess(BaseModel):
+    model_config = ConfigDict(
+        populate_by_name=True,
+    )
+    executable: Annotated[
+        str,
+        Field(
+            description="Fixed runtime classification `unified-exec`, never a command-derived name."
+        ),
+    ]
+    item_id: Annotated[str, Field(alias="itemId")]
+    process_id: Annotated[
+        str,
+        Field(
+            alias="processId",
+            description="Stable identifier assigned by the runtime, not an operating-system PID.",
+        ),
+    ]
+    status: Annotated[
+        ThreadTaskProcessStatus,
+        Field(description="Live when sampled; the process may exit before the response arrives."),
+    ]
 
 
 class RealtimeThreadTimelineEntry(BaseModel):

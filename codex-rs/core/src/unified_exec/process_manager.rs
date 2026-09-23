@@ -15,6 +15,7 @@ use uuid::Uuid;
 use super::oneshot::Completion;
 
 use crate::codex_thread::BackgroundTerminalInfo;
+use crate::codex_thread::TaskProcessInfo;
 use crate::exec_env::CODEX_PERMISSION_PROFILE_ENV_VAR;
 use crate::exec_env::CODEX_THREAD_ID_ENV_VAR;
 use crate::exec_env::CODEX_VERSION_ENV_VAR;
@@ -1710,6 +1711,23 @@ impl UnifiedExecProcessManager {
                 process_id: entry.process_id.to_string(),
                 command: entry.hook_command.clone(),
                 cwd: entry.cwd.clone(),
+            })
+            .collect()
+    }
+
+    pub(crate) async fn list_task_processes(&self) -> Vec<TaskProcessInfo> {
+        let store = self.process_store.lock().await;
+        let mut entries = store
+            .processes
+            .values()
+            .filter(|entry| !entry.process.has_exited())
+            .collect::<Vec<_>>();
+        entries.sort_by_key(|entry| entry.process_id);
+        entries
+            .into_iter()
+            .map(|entry| TaskProcessInfo {
+                item_id: entry.call_id.clone(),
+                process_id: entry.process_id,
             })
             .collect()
     }

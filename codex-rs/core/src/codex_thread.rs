@@ -202,6 +202,16 @@ pub struct BackgroundTerminalInfo {
     pub cwd: PathUri,
 }
 
+/// Sanitized runtime metadata for a process owned by this thread.
+///
+/// Unlike `BackgroundTerminalInfo`, this deliberately contains no command,
+/// working directory, environment, or operating-system PID.
+#[derive(Debug, Eq, PartialEq)]
+pub struct TaskProcessInfo {
+    pub item_id: String,
+    pub process_id: i32,
+}
+
 /// Conduit for the bidirectional stream of messages that compose a thread
 /// (formerly called a conversation) in Codex.
 impl CodexThread {
@@ -604,6 +614,10 @@ impl CodexThread {
 
     pub async fn list_background_terminals(&self) -> Vec<BackgroundTerminalInfo> {
         self.session.list_background_terminals().await
+    }
+
+    pub async fn list_task_processes(&self) -> Vec<TaskProcessInfo> {
+        self.session.list_task_processes().await
     }
 
     pub async fn terminate_background_terminal(&self, process_id: i32) -> bool {

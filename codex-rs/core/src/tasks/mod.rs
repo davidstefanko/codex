@@ -25,6 +25,7 @@ use tracing::trace_span;
 use tracing::warn;
 
 use crate::codex_thread::BackgroundTerminalInfo;
+use crate::codex_thread::TaskProcessInfo;
 use crate::config::Config;
 use crate::context::ContextualUserFragment;
 use crate::hook_runtime::run_turn_interrupt_hooks;
@@ -889,6 +890,13 @@ impl Session {
 
     pub(crate) async fn list_background_terminals(&self) -> Vec<BackgroundTerminalInfo> {
         self.services.unified_exec_manager.list_processes().await
+    }
+
+    pub(crate) async fn list_task_processes(&self) -> Vec<TaskProcessInfo> {
+        self.services
+            .unified_exec_manager
+            .list_task_processes()
+            .await
     }
 
     pub(crate) async fn terminate_background_terminal(&self, process_id: i32) -> bool {

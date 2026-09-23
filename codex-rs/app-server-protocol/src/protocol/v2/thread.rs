@@ -1210,6 +1210,46 @@ pub struct ThreadBackgroundTerminalsListResponse {
     pub next_cursor: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS, ExperimentalApi)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "v2/")]
+/// Host-client API: threadId selects a loaded thread; it is not caller identity.
+pub struct ThreadProcessesListParams {
+    pub thread_id: String,
+    #[ts(optional = nullable)]
+    pub cursor: Option<String>,
+    #[ts(optional = nullable)]
+    pub limit: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS, ExperimentalApi)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "v2/")]
+pub struct ThreadTaskProcess {
+    /// Stable identifier assigned by the runtime, not an operating-system PID.
+    pub process_id: String,
+    pub item_id: String,
+    /// Fixed runtime classification `unified-exec`, never a command-derived name.
+    pub executable: String,
+    /// Live when sampled; the process may exit before the response arrives.
+    pub status: ThreadTaskProcessStatus,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, JsonSchema, TS, ExperimentalApi)]
+#[serde(rename_all = "camelCase")]
+#[ts(rename_all = "camelCase", export_to = "v2/")]
+pub enum ThreadTaskProcessStatus {
+    Running,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS, ExperimentalApi)]
+#[serde(rename_all = "camelCase")]
+#[ts(export_to = "v2/")]
+pub struct ThreadProcessesListResponse {
+    pub data: Vec<ThreadTaskProcess>,
+    pub next_cursor: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, JsonSchema, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export_to = "v2/")]

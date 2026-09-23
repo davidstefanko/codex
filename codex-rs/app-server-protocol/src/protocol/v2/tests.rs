@@ -166,6 +166,38 @@ fn thread_background_terminals_list_response_round_trips_foreign_paths() {
 }
 
 #[test]
+fn thread_processes_list_response_contains_only_sanitized_runtime_metadata() {
+    let response = ThreadProcessesListResponse {
+        data: vec![ThreadTaskProcess {
+            process_id: "42".to_string(),
+            item_id: "item_123".to_string(),
+            executable: "unified-exec".to_string(),
+            status: ThreadTaskProcessStatus::Running,
+        }],
+        next_cursor: None,
+    };
+    let expected = json!({
+        "data": [{
+            "processId": "42",
+            "itemId": "item_123",
+            "executable": "unified-exec",
+            "status": "running"
+        }],
+        "nextCursor": null
+    });
+
+    assert_eq!(
+        serde_json::to_value(&response).expect("response should serialize"),
+        expected
+    );
+    assert_eq!(
+        serde_json::from_value::<ThreadProcessesListResponse>(expected)
+            .expect("response should deserialize"),
+        response
+    );
+}
+
+#[test]
 fn thread_sources_round_trip_as_scalar_labels() {
     for (source, label) in [
         (ThreadSource::User, "user"),

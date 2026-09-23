@@ -113,3 +113,26 @@ Attachments record the resources currently associated with a thread, independent
 `thread/attachment/list` accepts one `threadId` and returns at most 100 attachments per page, ordered by creation time and attachment id. Continue with `nextCursor` and the same `threadId` until the cursor is `null`. Each thread can retain up to 100 attachments. Removing an attachment frees a slot for a new attachment.
 
 Attachment creation and deletion requests using the same thread ID are serialized across connections. The requesting client receives its response before the compact update is broadcast, and duplicate creates or absent deletes do not emit updates. Deleting the owning thread removes its attachments under the same lifecycle exclusion; queued attachment mutations then report that the thread was not found.
+
+## Sanitizovaný seznam procesů (experimentální)
+
+`thread/processes/list` přijímá `threadId`, volitelné `cursor` a `limit` (1 až 64).
+Vrací `data` a `nextCursor`. Každá položka obsahuje pouze interní `processId`,
+`itemId`, pevnou runtime klasifikaci `executable: "unified-exec"` a `status: "running"`.
+Neobsahuje OS PID, argumenty, cestu k programu, pracovní adresář, environment ani výstup.
+Proces může mezi pořízením snímku a doručením odpovědi skončit. Ukončené položky se
+nevracejí, ani když ještě čekají na běžný úklid. Stránkování je průběžný pohled,
+nikoli neměnný snapshot. Kurzory jsou interní ID; při pokračování zachovejte threadId.
+
+Scope tvoří pouze procesy evidované unified-exec managerem zvoleného načteného
+vlákna. Jde o přímé spravované běhy, nikoli úplný strom potomků OS, `command/exec`,
+MCP servery či `thread/shellCommand`. Endpoint neprovádí globální výpis procesů.
+
+Stejně jako `thread/read` jde o API důvěryhodného hostového klienta. App-server
+nemá pro tuto relaci identitu volajícího modelového tasku: klient smí vybrat jiné
+načtené vlákno stejného runtime. `load_thread` pouze hledá ID v jeho ThreadManageru;
+nejde o kontrolu vlastnictví. Transportní autentizace chrání připojení, nikoli
+jednotlivá vlákna. Nepřítomné ID nebo ID z jiného runtime je odmítnuto.
+Modelový MCP adaptér proto nesmí přímo propouštět libovolné `threadId`: musí ho
+svázat s ověřenou identitou volajícího. Tento patch takový adaptér nepřidává a sám
+o sobě nezajišťuje taskovou autorizaci pro nedůvěryhodného klienta.
