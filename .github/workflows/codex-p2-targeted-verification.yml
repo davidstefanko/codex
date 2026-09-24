@@ -1,0 +1,33 @@
+name: codex-p2-targeted-verification
+on:
+  push:
+    branches: [codex-p2-verify-tests]
+permissions:
+  contents: read
+jobs:
+  targeted:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Pin source under test
+        run: git checkout --detach c8ddc5aff4a71a55ba31b782397a4a09d0a3d0c9
+      - uses: ./.github/actions/setup-ci
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582
+        with:
+          toolchain: 1.95.0
+      - uses: taiki-e/install-action@44c6d64aa62cd779e873306675c7a58e86d6d532
+        with:
+          tool: nextest
+      - name: Protocol tests
+        working-directory: codex-rs
+        run: just test -p codex-app-server-protocol
+      - name: App-server tests
+        working-directory: codex-rs
+        run: just test -p codex-app-server
+      - name: Core tests
+        working-directory: codex-rs
+        run: just test -p codex-core
