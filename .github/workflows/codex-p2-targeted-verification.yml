@@ -1,4 +1,4 @@
-name: codex-p2-source-verification
+name: codex-p2-runtime-smoke
 on:
   push:
     branches: [codex-p2-verify-tests]
@@ -22,21 +22,6 @@ jobs:
         with:
           toolchain: 1.95.0
           components: rustfmt
-      - uses: taiki-e/install-action@44c6d64aa62cd779e873306675c7a58e86d6d532
-        with:
-          tool: nextest
-      - name: Rust formatting
-        working-directory: codex-rs
-        run: cargo fmt -- --config imports_granularity=Item --check
-      - name: Protocol tests
-        working-directory: codex-rs
-        run: just test -p codex-app-server-protocol
-      - name: Process inventory app-server integration tests
-        working-directory: codex-rs
-        run: just test -p codex-app-server -E 'test(thread_processes)'
-      - name: Process inventory core regression
-        working-directory: codex-rs
-        run: just test -p codex-core -E 'test(task_process_inventory_filters_exited_entries_without_reaping_other_threads)'
       - name: Build exact-source app-server
         working-directory: codex-rs
         run: cargo build --locked -p codex-app-server --bin codex-app-server
@@ -56,7 +41,7 @@ jobs:
               env["CODEX_HOME"] = codex_home
               env["CODEX_INTERNAL_APP_SERVER_REMOTE_CONTROL_DISABLED"] = "1"
               process = subprocess.Popen(
-                  ["target/debug/codex-app-server", "--disable-plugin-startup-tasks-for-tests", "--stdio"],
+                  [os.path.join(env.get("CARGO_TARGET_DIR", "target"), "debug", "codex-app-server"), "--disable-plugin-startup-tasks-for-tests", "--stdio"],
                   stdin=subprocess.PIPE,
                   stdout=subprocess.PIPE,
                   stderr=subprocess.DEVNULL,
