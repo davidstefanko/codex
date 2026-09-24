@@ -37,3 +37,69 @@ jobs:
       - name: Process inventory core regression
         working-directory: codex-rs
         run: just test -p codex-core -E 'test(task_process_inventory_filters_exited_entries_without_reaping_other_threads)'
+      - name: Build exact-source app-server
+        working-directory: codex-rs
+        run: cargo build --locked -p codex-app-server --bin codex-app-server
+      - name: Isolated runtime RPC smoke
+        working-directory: codex-rs
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import select
+          import subprocess
+          import tempfile
+          import time
+
+          with tempfile.TemporaryDirectory(prefix="codex-p2-rpc-") as codex_home:
+              env = os.environ.copy()
+              env["CODEX_HOME"] = codex_home
+              env["CODEX_INTERNAL_APP_SERVER_REMOTE_CONTROL_DISABLED"] = "1"
+              process = subprocess.Popen(
+                  ["target/debug/codex-app-server", "--disable-plugin-startup-tasks-for-tests", "--stdio"],
+                  stdin=subprocess.PIPE,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.DEVNULL,
+                  text=True,
+                  env=env,
+              )
+
+              def send(payload):
+                  process.stdin.write(json.dumps(payload) + "\n")
+                  process.stdin.flush()
+
+              def response(request_id):
+                  deadline = time.monotonic() + 30
+                  while time.monotonic() < deadline:
+                      ready, _, _ = select.select([process.stdout], [], [], max(0, deadline - time.monotonic()))
+                      if not ready:
+                          break
+                      line = process.stdout.readline()
+                      if not line:
+                          raise AssertionError("app-server closed before response")
+                      message = json.loads(line)
+                      if message.get("id") == request_id:
+                          return message
+                  raise AssertionError("app-server response timeout")
+
+              try:
+                  send({"id": 1, "method": "initialize", "params": {
+                      "clientInfo": {"name": "p2-source-smoke", "title": None, "version": "0.1"},
+                      "capabilities": {"experimentalApi": True},
+                  }})
+                  assert "result" in response(1), "initialize failed"
+                  send({"method": "initialized", "params": {}})
+                  send({"id": 2, "method": "thread/processes/list", "params": {
+                      "threadId": "00000000-0000-0000-0000-000000000000", "cursor": "invalid", "limit": 1,
+                  }})
+                  result = response(2)
+                  assert "invalid process cursor" in result.get("error", {}).get("message", ""), "P2 handler not reached"
+                  print("PASS: exact-source app-server handled thread/processes/list; isolated config, no thread read")
+              finally:
+                  process.terminate()
+                  try:
+                      process.wait(timeout=5)
+                  except subprocess.TimeoutExpired:
+                      process.kill()
+                      process.wait(timeout=5)
+          PY
