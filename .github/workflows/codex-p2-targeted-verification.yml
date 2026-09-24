@@ -1,27 +1,39 @@
-name: codex-p2-core-verification
+name: codex-p2-source-verification
 on:
   push:
     branches: [codex-p2-verify-tests]
 permissions:
   contents: read
 jobs:
-  targeted:
+  source:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Pin source under test
-        run: git checkout --detach c8ddc5aff4a71a55ba31b782397a4a09d0a3d0c9
+        run: |
+          git checkout --detach c8ddc5aff4a71a55ba31b782397a4a09d0a3d0c9
+          test "$(git rev-parse HEAD)" = c8ddc5aff4a71a55ba31b782397a4a09d0a3d0c9
       - uses: ./.github/actions/setup-ci
       - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582
         with:
           toolchain: 1.95.0
+          components: rustfmt
       - uses: taiki-e/install-action@44c6d64aa62cd779e873306675c7a58e86d6d532
         with:
           tool: nextest
-      - name: Core process inventory regression
+      - name: Rust formatting
+        working-directory: codex-rs
+        run: cargo fmt -- --config imports_granularity=Item --check
+      - name: Protocol tests
+        working-directory: codex-rs
+        run: just test -p codex-app-server-protocol
+      - name: Process inventory app-server integration tests
+        working-directory: codex-rs
+        run: just test -p codex-app-server -E 'test(thread_processes)'
+      - name: Process inventory core regression
         working-directory: codex-rs
         run: just test -p codex-core -E 'test(task_process_inventory_filters_exited_entries_without_reaping_other_threads)'
