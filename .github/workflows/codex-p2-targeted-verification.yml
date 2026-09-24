@@ -41,7 +41,7 @@ jobs:
               env["CODEX_HOME"] = codex_home
               env["CODEX_INTERNAL_APP_SERVER_REMOTE_CONTROL_DISABLED"] = "1"
               process = subprocess.Popen(
-                  [os.path.join(env.get("CARGO_TARGET_DIR", "target"), "debug", "codex-app-server"), "--disable-plugin-startup-tasks-for-tests", "--stdio"],
+                  [os.path.join(env.get("CARGO_TARGET_DIR", "target"), "debug", "codex-app-server"), "--disable-plugin-startup-tasks-for-tests"],
                   stdin=subprocess.PIPE,
                   stdout=subprocess.PIPE,
                   stderr=subprocess.DEVNULL,
