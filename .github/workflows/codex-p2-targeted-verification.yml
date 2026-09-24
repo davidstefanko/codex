@@ -24,7 +24,7 @@ jobs:
           components: rustfmt
       - name: Build exact-source app-server
         working-directory: codex-rs
-        run: cargo build --locked -p codex-app-server --bin codex-app-server
+        run: cargo build -p codex-app-server --bin codex-app-server
       - name: Isolated runtime RPC smoke
         working-directory: codex-rs
         run: |
