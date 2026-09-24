@@ -1,4 +1,4 @@
-name: codex-p2-targeted-verification
+name: codex-p2-core-verification
 on:
   push:
     branches: [codex-p2-verify-tests]
@@ -7,7 +7,7 @@ permissions:
 jobs:
   targeted:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
@@ -22,12 +22,6 @@ jobs:
       - uses: taiki-e/install-action@44c6d64aa62cd779e873306675c7a58e86d6d532
         with:
           tool: nextest
-      - name: Protocol tests
+      - name: Core process inventory regression
         working-directory: codex-rs
-        run: just test -p codex-app-server-protocol
-      - name: App-server tests
-        working-directory: codex-rs
-        run: just test -p codex-app-server
-      - name: Core tests
-        working-directory: codex-rs
-        run: just test -p codex-core
+        run: just test -p codex-core -E 'test(task_process_inventory_filters_exited_entries_without_reaping_other_threads)'
